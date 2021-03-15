@@ -1,3 +1,9 @@
+/******************************************************/
+//       THIS IS A GENERATED FILE - DO NOT EDIT       //
+/******************************************************/
+
+#include "Particle.h"
+#line 1 "c:/Git/Particle_DIO/Particle_Dio/src/Particle_Dio.ino"
 /*
  * Project Particle_Dio
  * Description: A tester to connect digital inputs to an online dashboard
@@ -5,6 +11,10 @@
  * Date: 15/03/2021
  */
 
+void setup();
+void loop();
+int ledToggle(String command);
+#line 8 "c:/Git/Particle_DIO/Particle_Dio/src/Particle_Dio.ino"
 int led1 = D11;
 int led2 = D9;
   

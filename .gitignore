@@ -50,3 +50,5 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+Particle_Dio/target/3.0.0-rc.1/argon/platform_user_ram.ld
+Particle_Dio/.vscode/settings.json
