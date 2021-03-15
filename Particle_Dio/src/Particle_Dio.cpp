@@ -15,8 +15,10 @@ void setup();
 void loop();
 int ledToggle(String command);
 #line 8 "c:/Git/Particle_DIO/Particle_Dio/src/Particle_Dio.ino"
-int led1 = D11;
-int led2 = D9;
+int led1 = D2;
+int led2 = D3;
+int but1 = D12;
+int but2 = D13;
   
 
 // setup() runs once, when the device is first turned on.
@@ -27,6 +29,8 @@ void setup()
    // Here's the pin configuration, same as last time
    pinMode(led1, OUTPUT);
    pinMode(led2, OUTPUT);
+   pinMode(but1, INPUT_PULLUP);
+   pinMode(but2, INPUT_PULLUP);
 
    // We are also going to declare a Particle.function so that we can turn the LED on and off from the cloud.
    Particle.function("led",ledToggle);
@@ -42,10 +46,18 @@ void setup()
 void loop() 
 {
   // The core of your code will likely live here.
-  digitalWrite(led2, HIGH);
-  delay(500);
-  digitalWrite(led2,LOW);
-  delay(500);
+  //digitalWrite(led2, HIGH);
+  //delay(500);
+  //digitalWrite(led2,LOW);
+  //delay(500);
+  if(but1==HIGH)
+  {
+    digitalWrite(led2,LOW);
+  }
+  else
+  {
+    digitalWrite(led2,HIGH);
+  }
   Serial.println("Hello I'm a Particle Argon");
 
 }

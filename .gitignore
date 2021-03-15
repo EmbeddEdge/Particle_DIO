@@ -52,3 +52,9 @@ Mkfile.old
 dkms.conf
 Particle_Dio/target/3.0.0-rc.1/argon/platform_user_ram.ld
 Particle_Dio/.vscode/settings.json
+Particle_Dio/target/3.0.0-rc.1/argon/Particle_Dio.bin
+Particle_Dio/target/3.0.0-rc.1/argon/Particle_Dio.bin.crc_block
+Particle_Dio/target/3.0.0-rc.1/argon/Particle_Dio.bin.no_crc
+Particle_Dio/target/3.0.0-rc.1/argon/Particle_Dio.dfu
+Particle_Dio/target/3.0.0-rc.1/argon/Particle_Dio.lst
+Particle_Dio/src/Particle_Dio.cpp
