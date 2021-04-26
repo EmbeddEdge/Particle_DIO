@@ -9,16 +9,18 @@
  * Description: A tester to connect digital inputs to an online dashboard
  * Author: Turyn Lim Banda
  * Date: 15/03/2021
+ * 
+ * 
  */
 
 void setup();
 void loop();
 int ledToggle(String command);
-#line 8 "c:/Git/Particle_DIO/Particle_Dio/src/Particle_Dio.ino"
+#line 10 "c:/Git/Particle_DIO/Particle_Dio/src/Particle_Dio.ino"
 int led1 = D2;
 int led2 = D3;
-int but1 = D12;
-int but2 = D13;
+int but1 = D11;
+int but2 = D12;
   
 
 // setup() runs once, when the device is first turned on.
@@ -46,19 +48,14 @@ void setup()
 void loop() 
 {
   // The core of your code will likely live here.
-  //digitalWrite(led2, HIGH);
-  //delay(500);
-  //digitalWrite(led2,LOW);
-  //delay(500);
-  if(but1==HIGH)
-  {
-    digitalWrite(led2,LOW);
-  }
-  else
-  {
-    digitalWrite(led2,HIGH);
-  }
-  Serial.println("Hello I'm a Particle Argon");
+  digitalWrite(led1, HIGH);   // Turn ON the LED
+
+  String temp = String(random(-10, 60));
+  Particle.publish("Publish_Chamber_Temperature", temp, PRIVATE);
+  delay(30000);               // Wait for 30 seconds
+
+  digitalWrite(led1, LOW);    // Turn OFF the LED
+  delay(30000);  
 
 }
 
@@ -75,13 +72,13 @@ int ledToggle(String command) {
     */
 
     if (command=="on") {
-        digitalWrite(led1,HIGH);
-        //digitalWrite(led2,HIGH);
+        //digitalWrite(led1,HIGH);
+        digitalWrite(led2,HIGH);
         return 1;
     }
     else if (command=="off") {
-        digitalWrite(led1,LOW);
-        //digitalWrite(led2,LOW);
+        //digitalWrite(led1,LOW);
+        digitalWrite(led2,LOW);
         return 0;
     }
     else {
