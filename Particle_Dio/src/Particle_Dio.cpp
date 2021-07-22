@@ -12,76 +12,53 @@
  * 
  * 
  */
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
-#include <DHT_U.h>
+#include <DS18B20.h>
+#include <math.h>
 
 void setup();
 void loop();
 int ledToggle(String command);
-String readTemp();
-#line 13 "c:/Git/Particle_DIO/Particle_Dio/src/Particle_Dio.ino"
-#define DHTPIN            A0         // Pin which is connected to the DHT sensor.
-#define DHTTYPE           DHT11     // DHT 11 
-
-DHT_Unified dht(DHTPIN, DHTTYPE);
-
-uint32_t delayMS;
+void getTemp();
+void publishData();
+#line 12 "c:/Git/Particle_DIO/Particle_Dio/src/Particle_Dio.ino"
+const int      MAXRETRY          = 4;
+const uint32_t msSAMPLE_INTERVAL = 5000;
+const uint32_t msMETRIC_PUBLISH  = 30000;
 
 int led1 = D2;
 int led2 = D3;
 int but1 = D11;
 int but2 = D12;
-//int Pin_DHT11_Data = A0;
-  
+const int16_t dsData = A0;
+
+// Sets Pin A0 as data pin and the only sensor on bus
+DS18B20  ds18b20(dsData, true); 
+
+char     temp[64];
+double   celsius;
+uint32_t msLastMetric;
+uint32_t msLastSample;
 
 // setup() runs once, when the device is first turned on.
 void setup() 
 {
-  Serial.begin(115200);
-  // Put initialization like pinMode and begin functions here.
-   // Here's the pin configuration, same as last time
-   pinMode(led1, OUTPUT);
-   pinMode(led2, OUTPUT);
-   pinMode(but1, INPUT_PULLUP);
-   pinMode(but2, INPUT_PULLUP);
+    Serial.begin(115200);
+    // Put initialization like pinMode and begin functions here.
+    // Here's the pin configuration, same as last time
+    pinMode(led1, OUTPUT);
+    pinMode(led2, OUTPUT);
+    pinMode(but1, INPUT_PULLUP);
+    pinMode(but2, INPUT_PULLUP);
 
-   // We are also going to declare a Particle.function so that we can turn the LED on and off from the cloud.
-   Particle.function("led",ledToggle);
-   // This is saying that when we ask the cloud for the function "led", it will employ the function ledToggle() from this app.
+    // We are also going to declare a Particle.function so that we can turn the LED on and off from the cloud.
+    Particle.function("led",ledToggle);
+    // This is saying that when we ask the cloud for the function "led", it will employ the function ledToggle() from this app.
 
-   // For good measure, let's also make sure both LEDs are off when we start:
-   digitalWrite(led1, LOW);
-   digitalWrite(led2, LOW);
+    // For good measure, let's also make sure both LEDs are off when we start:
+    digitalWrite(led1, LOW);
+    digitalWrite(led2, LOW);
 
-   dht.begin();
-    Serial.println("DHTxx Unified Sensor Example");
-    // Print temperature sensor details.
-    sensor_t sensor;
-    dht.temperature().getSensor(&sensor);
-    Serial.println("------------------------------------");
-    Serial.println("Temperature");
-    Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-    Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-    Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-    Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" *C");
-    Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" *C");
-    Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" *C");  
-    Serial.println("------------------------------------");
-    // Print humidity sensor details.
-    dht.humidity().getSensor(&sensor);
-    Serial.println("------------------------------------");
-    Serial.println("Humidity");
-    Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-    Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-    Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-    Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println("%");
-    Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println("%");
-    Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println("%");  
-    Serial.println("------------------------------------");
-    // Set delay between sensor readings based on sensor details.
-    delayMS = sensor.min_delay / 100;
-
+    delay(1000);
 }
 
 // loop() runs over and over again, as quickly as it can execute.
@@ -90,19 +67,29 @@ void loop()
   // The core of your code will likely live here.
   digitalWrite(led1, HIGH);   // Turn ON the LED
 
-  
+  if (millis() - msLastSample >= msSAMPLE_INTERVAL){
+    getTemp();
+  }
+
+  if (millis() - msLastMetric >= msMETRIC_PUBLISH){
+    Serial.println("Publishing now.");
+    publishData();
+  }
+
    // Delay between measurements.
   //delay(delayMS);
 
   //Read the temperature from the DHT11
-  String temp = readTemp();
+  //String temp = readTemp();
+  //String temp = String(random(-5, 50));
 
   //String temp = String(random(-10, 60));
-  Particle.publish("Publish_Chamber_Temperature", temp, PRIVATE);
-  delay(30000);               // Wait for 30 seconds
+  //Particle.publish("Publish_Chamber_Temperature", temp, PRIVATE);
 
-  digitalWrite(led1, LOW);    // Turn OFF the LED
-  delay(30000);  
+  //delay(30000);               // Wait for 30 seconds
+
+  //digitalWrite(led1, LOW);    // Turn OFF the LED
+  //delay(30000);  
   
 }
 
@@ -133,24 +120,26 @@ int ledToggle(String command) {
     }
 }
 
-String readTemp()
-{
-    float f_Temperature; 
-    sensors_event_t event;
-    dht.temperature().getEvent(&event);
-    if (isnan(event.temperature)) 
-    {
-        String s_Temperature = String(random(-10, -5));
-        Serial.println("Error reading temperature!");
-        return s_Temperature;
-    }
-    else 
-    {
-        f_Temperature = event.temperature; 
-        String s_Temperature = String(f_Temperature);
-        Serial.print("Temperature: ");
-        Serial.print(event.temperature);
-        Serial.println(" *C");
-        return s_Temperature;
-    } 
+void getTemp(){
+  float _temp;
+  int   i = 0;
+
+  do {
+    _temp = ds18b20.getTemperature();
+  } while (!ds18b20.crcCheck() && MAXRETRY > i++);
+
+  if (i < MAXRETRY) {
+    celsius = _temp;
+    Serial.println(celsius);
+  }
+  else {
+    Serial.println("Invalid reading");
+  }
+  msLastSample = millis();
+}
+
+void publishData(){
+  sprintf(temp, "%2.2f", celsius);
+  Particle.publish("Publish_Chamber_Temperature", temp, PRIVATE);
+  msLastMetric = millis();
 }
