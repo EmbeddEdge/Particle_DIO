@@ -10,14 +10,14 @@
 #include <math.h>
 
 const int      MAXRETRY          = 4;
-const uint32_t msSAMPLE_INTERVAL = 5000;
-const uint32_t msMETRIC_PUBLISH  = 30000;
+const uint32_t msSAMPLE_INTERVAL = 2500;
+const uint32_t msMETRIC_PUBLISH  = 240000;
 
-int led1 = D2;
-int led2 = D3;
-int but1 = D11;
+int led1 = D8;
+int led2 = D8;
+int but1 = D2;
 int but2 = D12;
-const int16_t dsData = A0;
+const int16_t dsData = A1;
 
 // Sets Pin A0 as data pin and the only sensor on bus
 DS18B20  ds18b20(dsData, true); 
