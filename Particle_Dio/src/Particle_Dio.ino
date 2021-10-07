@@ -18,6 +18,7 @@ int led2 = D8;
 int but1 = D2;
 int but2 = D12;
 const int16_t dsData = A1;
+volatile int buttonState = LOW;
 
 // Sets Pin A0 as data pin and the only sensor on bus
 DS18B20  ds18b20(dsData, true); 
@@ -37,6 +38,7 @@ void setup()
     pinMode(led2, OUTPUT);
     pinMode(but1, INPUT_PULLUP);
     pinMode(but2, INPUT_PULLUP);
+    attachInterrupt(but1, buttonUpdate, RISING);
 
     // We are also going to declare a Particle.function so that we can turn the LED on and off from the cloud.
     Particle.function("led",ledToggle);
@@ -52,32 +54,26 @@ void setup()
 // loop() runs over and over again, as quickly as it can execute.
 void loop() 
 {
-  // The core of your code will likely live here.
-  digitalWrite(led1, HIGH);   // Turn ON the LED
 
+  //Read the input button
+  if(buttonState==HIGH)
+  {
+    digitalWrite(led2, HIGH);
+  }
+  else
+  {
+    digitalWrite(led2, LOW);
+  }
+  // Sample the temperature sensor on a timer interval
   if (millis() - msLastSample >= msSAMPLE_INTERVAL){
     getTemp();
   }
 
+  // Publish the data on a timer interval
   if (millis() - msLastMetric >= msMETRIC_PUBLISH){
     Serial.println("Publishing now.");
     publishData();
   }
-
-   // Delay between measurements.
-  //delay(delayMS);
-
-  //Read the temperature from the DHT11
-  //String temp = readTemp();
-  //String temp = String(random(-5, 50));
-
-  //String temp = String(random(-10, 60));
-  //Particle.publish("Publish_Chamber_Temperature", temp, PRIVATE);
-
-  //delay(30000);               // Wait for 30 seconds
-
-  //digitalWrite(led1, LOW);    // Turn OFF the LED
-  //delay(30000);  
   
 }
 
@@ -130,4 +126,8 @@ void publishData(){
   sprintf(temp, "%2.2f", celsius);
   Particle.publish("Publish_Chamber_Temperature", temp, PRIVATE);
   msLastMetric = millis();
+}
+
+void buttonUpdate(){
+  buttonState = !buttonState;
 }
