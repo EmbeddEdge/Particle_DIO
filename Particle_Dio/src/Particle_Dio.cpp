@@ -13,6 +13,7 @@
  * 
  */
 #include <DS18B20.h>
+#include <clickButton.h>
 #include <math.h>
 
 void setup();
@@ -20,16 +21,30 @@ void loop();
 int ledToggle(String command);
 void getTemp();
 void publishData();
-#line 12 "c:/Git/Particle_DIO/Particle_Dio/src/Particle_Dio.ino"
+void buttonUpdate();
+void updateLED();
+void buttonStatePrint();
+#line 13 "c:/Git/Particle_DIO/Particle_Dio/src/Particle_Dio.ino"
 const int      MAXRETRY          = 4;
 const uint32_t msSAMPLE_INTERVAL = 2500;
 const uint32_t msMETRIC_PUBLISH  = 240000;
+const uint32_t msSAMPLE_INTERVAL2 = 250;
 
-int led1 = D2;
+// Button results 
+int function = 0;
+int lastFunction = 0;
+
+int led1 = D8;
 int led2 = D8;
-int but1 = D11;
+//int but1 = D2;
 int but2 = D12;
 const int16_t dsData = A1;
+volatile int buttonState = LOW;
+// the Button
+const int but1 = D2;
+ClickButton button1(but1, LOW, CLICKBTN_PULLUP);
+
+
 
 // Sets Pin A0 as data pin and the only sensor on bus
 DS18B20  ds18b20(dsData, true); 
@@ -42,21 +57,28 @@ uint32_t msLastSample;
 // setup() runs once, when the device is first turned on.
 void setup() 
 {
-    Serial.begin(115200);
-    // Put initialization like pinMode and begin functions here.
-    // Here's the pin configuration, same as last time
-    pinMode(led1, OUTPUT);
-    pinMode(led2, OUTPUT);
-    pinMode(but1, INPUT_PULLUP);
-    pinMode(but2, INPUT_PULLUP);
+  Serial.begin(115200);
+  // Put initialization like pinMode and begin functions here.
+  // Here's the pin configuration, same as last time
+  pinMode(led1, OUTPUT);
+  pinMode(led2, OUTPUT);
+  pinMode(but1, INPUT_PULLUP);
+  pinMode(but2, INPUT_PULLUP);
+  //attachInterrupt(but1, buttonUpdate, RISING);
 
-    // We are also going to declare a Particle.function so that we can turn the LED on and off from the cloud.
-    Particle.function("led",ledToggle);
-    // This is saying that when we ask the cloud for the function "led", it will employ the function ledToggle() from this app.
+  // We are also going to declare a Particle.function so that we can turn the LED on and off from the cloud.
+  Particle.function("led",ledToggle);
+  // This is saying that when we ask the cloud for the function "led", it will employ the function ledToggle() from this app.
 
-    // For good measure, let's also make sure both LEDs are off when we start:
-    digitalWrite(led1, LOW);
-    digitalWrite(led2, LOW);
+  // For good measure, let's also make sure both LEDs are off when we start:
+  digitalWrite(led1, LOW);
+  digitalWrite(led2, LOW);
+
+  // Setup button timers (all in milliseconds / ms)
+  // (These are default if not set, but changeable for convenience)
+  button1.debounceTime   = 20;   // Debounce timer in ms
+  button1.multiclickTime = 250;  // Time limit for multi clicks
+  button1.longClickTime  = 1000; // time until "held-down clicks" register
 
     delay(1000);
 }
@@ -64,32 +86,26 @@ void setup()
 // loop() runs over and over again, as quickly as it can execute.
 void loop() 
 {
-  // The core of your code will likely live here.
-  digitalWrite(led1, HIGH);   // Turn ON the LED
 
+  // Update button state
+  button1.Update();
+
+  //Update LED based on Button input
+  //updateLED();
+
+  //Print button state after every update
+  buttonStatePrint();
+  
+  // Sample the temperature sensor on a timer interval
   if (millis() - msLastSample >= msSAMPLE_INTERVAL){
     getTemp();
   }
 
+  // Publish the data on a timer interval
   if (millis() - msLastMetric >= msMETRIC_PUBLISH){
     Serial.println("Publishing now.");
     publishData();
   }
-
-   // Delay between measurements.
-  //delay(delayMS);
-
-  //Read the temperature from the DHT11
-  //String temp = readTemp();
-  //String temp = String(random(-5, 50));
-
-  //String temp = String(random(-10, 60));
-  //Particle.publish("Publish_Chamber_Temperature", temp, PRIVATE);
-
-  //delay(30000);               // Wait for 30 seconds
-
-  //digitalWrite(led1, LOW);    // Turn OFF the LED
-  //delay(30000);  
   
 }
 
@@ -120,7 +136,8 @@ int ledToggle(String command) {
     }
 }
 
-void getTemp(){
+void getTemp()
+{
   float _temp;
   int   i = 0;
 
@@ -128,7 +145,8 @@ void getTemp(){
     _temp = ds18b20.getTemperature();
   } while (!ds18b20.crcCheck() && MAXRETRY > i++);
 
-  if (i < MAXRETRY) {
+  if (i < MAXRETRY) 
+  {
     celsius = _temp;
     Serial.println(celsius);
   }
@@ -138,8 +156,35 @@ void getTemp(){
   msLastSample = millis();
 }
 
-void publishData(){
+void publishData()
+{
   sprintf(temp, "%2.2f", celsius);
   Particle.publish("Publish_Chamber_Temperature", temp, PRIVATE);
   msLastMetric = millis();
+}
+
+void buttonUpdate()
+{
+  buttonState = !buttonState;
+}
+
+void updateLED()
+{
+  if(buttonState==HIGH)
+  {
+    digitalWrite(led2, HIGH);
+  }
+  else
+  {
+    digitalWrite(led2, LOW);
+  }
+}
+
+void buttonStatePrint()
+{
+  if (function != lastFunction){
+    Serial.print("Button Press Type: ");
+    Serial.println(function);
+    function = lastFunction;
+  }
 }
